@@ -4,25 +4,6 @@ function deg2rad(angle) {
     return angle * Math.PI / 180;
 }
 
-// p: an array of xyz vertex coords
-// t: an array of uv tex coords
-function Vertex(p,t)
-{
-    this.p = p;
-    this.t = t;
-    this.normal = [];
-    this.triangles = [];
-}
-
-function Triangle(v0, v1, v2)
-{
-    this.v0 = v0;
-    this.v1 = v1;
-    this.v2 = v2;
-    this.normal = [];
-    this.tangent = [];
-}
-
 // Model Constructor function
 function Model(name) {
     this.name = name;
@@ -63,83 +44,94 @@ function Model(name) {
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iIndexBuffer);
 
-        //gl.drawArrays(gl.LINE_STRIP, 0, this.count);
         gl.drawElements(gl.TRIANGLES, this.count, gl.UNSIGNED_SHORT, 0);
     }
 
     this.DrawWireframe = function() {
 
-        for (let p=0; p<this.count; p+=3)                    // offset in bytes (UNSIGNED_SHORT is two bytes)
+        for (let p=0; p<this.count; p+=3)
             gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_SHORT, p*2);
     }
 }
 
-function CreateSurfaceData(data)
-{
-    let vertices = [];
-    let triangles = [];
+/**
+ * Поверхня кон’югації коаксіального циліндра й конуса (за методикою з VGGI/model.js).
+ * Заповнює data.verticesF32, data.texcoordsF32, data.indicesU16.
+ */
+function CreateSurfaceData(data, params) {
+    params = params || {};
 
-    for (let i=0, ang = 0; i<72; i++, ang+=5) {
-        // TODO: replace with your equation
-        vertices.push( new Vertex( [Math.sin(deg2rad(ang)), 0, Math.cos(deg2rad(ang))], [ang/360, 0]  ));
-    }
+    const R1 = params.R1 !== undefined ? params.R1 : 0.5;
+    const R2 = params.R2 !== undefined ? params.R2 : 1.5;
+    const c = params.c !== undefined ? params.c : 6.0;
+    const phiDeg = params.phiDeg !== undefined ? params.phiDeg : 30;
+    const numU = Math.max(2, Math.floor(params.numU !== undefined ? params.numU : 24));
+    const numV = Math.max(3, Math.floor(params.numV !== undefined ? params.numV : 72));
 
-    for (let i=0, ang = 0; i<72; i++, ang+=5) {
+    const phi = deg2rad(phiDeg);
 
-        // TODO: replace with your equation
-        let v0ind = vertices.length;
-        vertices.push( new Vertex( [Math.sin(deg2rad(ang)), 1, Math.cos(deg2rad(ang))], [ang/360, 1]  ));
+    let a = R2 - R1;
+    if (Math.abs(R2 - R1) < 1e-9)
+        a = 1e-5;
 
-        // v0    v2 
-        //   o - o
-        //   | \ |
-        //   o - o
-        // v3     v1
+    let b;
+    if (phi < 0 && a < 0)
+        b = c / 4;
+    else if (phi > 0 && a > 0)
+        b = c / 4;
+    else if (phi < 0 && a > 0)
+        b = (3 * c) / 4;
+    else if (phi > 0 && a < 0)
+        b = (3 * c) / 4;
 
-        if (i > 0)
-        {
-            let v1ind = v0ind - 72 -1;
-            let v2ind = v0ind - 1;
-            let v3ind = v0ind - 72;
+    const r = function(z) {
+        return a * (1 - Math.cos((2 * Math.PI * z) / c)) + R1;
+    };
 
-            let trian = new Triangle(v0ind, v1ind, v2ind);
-            let trianInd = triangles.length;
+    const vertCount = numU * numV;
+    const verticesF32 = new Float32Array(vertCount * 3);
+    const texcoordsF32 = new Float32Array(vertCount * 2);
 
-            triangles.push( trian );
-            vertices[v0ind].triangles.push(trianInd);
-            vertices[v1ind].triangles.push(trianInd);
-            vertices[v2ind].triangles.push(trianInd);
+    for (let i = 0; i < numU; i++) {
+        const z = (b * i) / (numU - 1);
+        const radius = r(z);
+        for (let j = 0; j < numV; j++) {
+            const theta = (2 * Math.PI * j) / numV;
+            const cosT = Math.cos(theta);
+            const sinT = Math.sin(theta);
 
-            let trian2 = new Triangle(v0ind, v3ind, v1ind);
-            let trianInd2 = triangles.length;
+            const idx = (i * numV + j) * 3;
+            verticesF32[idx + 0] = radius * cosT;
+            verticesF32[idx + 1] = radius * sinT;
+            verticesF32[idx + 2] = z;
 
-            triangles.push( trian2 );
-            vertices[v0ind].triangles.push(trianInd2);
-            vertices[v3ind].triangles.push(trianInd2);
-            vertices[v1ind].triangles.push(trianInd2);
-
+            const texIdx = (i * numV + j) * 2;
+            texcoordsF32[texIdx + 0] = numU > 1 ? i / (numU - 1) : 0.0;
+            texcoordsF32[texIdx + 1] = j / numV;
         }
-
     }
 
-    data.verticesF32  = new Float32Array(vertices.length*3);
-    data.texcoordsF32 = new Float32Array(vertices.length*2);
-    for (let i=0, len=vertices.length; i<len; i++)
-    {
-        data.verticesF32[i*3 + 0] = vertices[i].p[0];
-        data.verticesF32[i*3 + 1] = vertices[i].p[1];
-        data.verticesF32[i*3 + 2] = vertices[i].p[2];
+    const quadCount = (numU - 1) * numV;
+    const indicesU16 = new Uint16Array(quadCount * 6);
+    let w = 0;
+    for (let i = 0; i < numU - 1; i++) {
+        for (let j = 0; j < numV; j++) {
+            const jn = (j + 1) % numV;
+            const i0 = i * numV + j;
+            const i1 = i * numV + jn;
+            const i2 = (i + 1) * numV + j;
+            const i3 = (i + 1) * numV + jn;
 
-        data.texcoordsF32[i*2 + 0] = vertices[i].t[0];
-        data.texcoordsF32[i*2 + 1] = vertices[i].t[1];
+            indicesU16[w++] = i0;
+            indicesU16[w++] = i2;
+            indicesU16[w++] = i1;
+            indicesU16[w++] = i1;
+            indicesU16[w++] = i2;
+            indicesU16[w++] = i3;
+        }
     }
 
-    data.indicesU16 = new Uint16Array(triangles.length*3);
-    for (let i=0, len=triangles.length; i<len; i++)
-    {
-        data.indicesU16[i*3 + 0] = triangles[i].v0;
-        data.indicesU16[i*3 + 1] = triangles[i].v1;
-        data.indicesU16[i*3 + 2] = triangles[i].v2;
-    }
-
+    data.verticesF32 = verticesF32;
+    data.texcoordsF32 = texcoordsF32;
+    data.indicesU16 = indicesU16;
 }
