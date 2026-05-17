@@ -1,34 +1,190 @@
-<!DOCTYPE html>
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!doctype html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>PA#1 – Anaglyph Stereo</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
+      body {
+        background-color: #1e1e2e;
+        color: #cdd6f4;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+        gap: 16px;
+      }
 
-<title>PA#1</title>
-<style>
-    body {
-        background-color: #EEEEEE;
-    }
-</style>
+      h2 {
+        font-size: 1.4rem;
+        color: #cba6f7;
+        letter-spacing: 0.05em;
+      }
 
-<script src="./Utils/trackball-rotator.js"></script>
-<script src="./Utils/m4.js"></script>
-<script src="./shader.gpu"></script>
-<script src="./Model.js"></script>
-<script src="./StereoCamera.js"></script>
-<script src="./Texture.js"></script>
-<script src="./main.js"></script>
+      #message {
+        font-size: 0.85rem;
+        color: #a6adc8;
+        text-align: center;
+      }
 
-</head>
-<body onload="init()">
+      #layout {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+      }
 
-<h2>A Cube with "Trackball" Mouse Rotation</h2>
+      #canvas-holder canvas {
+        display: block;
+        border: 2px solid #45475a;
+        border-radius: 6px;
+      }
 
-<p id="message">Drag your mouse on the cube to rotate it.<br>
-(On a touch screen, you can use your finger.)</p>
+      #controls {
+        background: #313244;
+        border: 1px solid #45475a;
+        border-radius: 8px;
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        min-width: 220px;
+      }
 
+      #controls h3 {
+        font-size: 0.95rem;
+        color: #89b4fa;
+        border-bottom: 1px solid #45475a;
+        padding-bottom: 8px;
+        margin-bottom: 2px;
+      }
 
-<div id="canvas-holder">
-   <canvas width="600" height="600" id="webglcanvas" style="background-color:red"></canvas>
-</div>
+      .ctrl-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
 
+      .ctrl-group label {
+        font-size: 0.78rem;
+        color: #a6adc8;
+        display: flex;
+        justify-content: space-between;
+      }
 
-</body></html>
+      .ctrl-group label span {
+        color: #f38ba8;
+        font-weight: bold;
+        min-width: 36px;
+        text-align: right;
+      }
+
+      .ctrl-group input[type="range"] {
+        width: 100%;
+        accent-color: #cba6f7;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body onload="init()">
+    <h2>Anaglyph Stereo – Trackball Rotation</h2>
+    <p id="message">
+      Use red-cyan 3D glasses &nbsp;|&nbsp; Drag mouse to rotate
+    </p>
+
+    <div id="layout">
+      <div id="canvas-holder">
+        <canvas
+          width="600"
+          height="600"
+          id="webglcanvas"
+          style="background-color: #000"
+        ></canvas>
+      </div>
+
+      <div id="controls">
+        <h3>Stereo Camera Parameters</h3>
+
+        <div class="ctrl-group">
+          <label>Eye Separation <span id="eyeSepVal">0.70</span></label>
+          <input
+            type="range"
+            id="eyeSep"
+            min="-1.0"
+            max="1.0"
+            step="0.05"
+            value="0.7"
+            oninput="
+              document.getElementById('eyeSepVal').textContent = parseFloat(
+                this.value,
+              ).toFixed(2)
+            "
+          />
+        </div>
+
+        <div class="ctrl-group">
+          <label>Convergence <span id="convergenceVal">14.0</span></label>
+          <input
+            type="range"
+            id="convergence"
+            min="5.0"
+            max="40.0"
+            step="0.5"
+            value="14.0"
+            oninput="
+              document.getElementById('convergenceVal').textContent =
+                parseFloat(this.value).toFixed(1)
+            "
+          />
+        </div>
+
+        <div class="ctrl-group">
+          <label>FOV (rad) <span id="fovVal">0.40</span></label>
+          <input
+            type="range"
+            id="fov"
+            min="0.1"
+            max="1.5"
+            step="0.01"
+            value="0.4"
+            oninput="
+              document.getElementById('fovVal').textContent = parseFloat(
+                this.value,
+              ).toFixed(2)
+            "
+          />
+        </div>
+
+        <div class="ctrl-group">
+          <label>Near Clip <span id="nearVal">8.0</span></label>
+          <input
+            type="range"
+            id="nearClip"
+            min="1.0"
+            max="15.0"
+            step="0.5"
+            value="8.0"
+            oninput="
+              document.getElementById('nearVal').textContent = parseFloat(
+                this.value,
+              ).toFixed(1)
+            "
+          />
+        </div>
+      </div>
+    </div>
+
+    <script src="./Utils/trackball-rotator.js"></script>
+    <script src="./Utils/m4.js"></script>
+    <script src="./shader.gpu"></script>
+    <script src="./Model.js"></script>
+    <script src="./StereoCamera.js"></script>
+    <script src="./Texture.js"></script>
+    <script src="./main.js"></script>
+  </body>
+</html>
