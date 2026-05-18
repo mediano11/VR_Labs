@@ -40,8 +40,8 @@
 
   <body>
     <div id="hint">
-      Наведіть камеру на маркер <strong>MN</strong> &nbsp;|&nbsp; поверхня
-      кон’югації
+      Point the camera at the <strong>MN</strong> marker &nbsp;|&nbsp;
+      surface of conjugation
     </div>
 
     <script src="./Model.js"></script>
@@ -79,8 +79,8 @@
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         document.getElementById("hint").innerHTML =
-          "WebRTC недоступний у цьому браузері.<br>" +
-          "Відкрийте через <strong>https://</strong> або <strong>localhost</strong> (не file://).";
+          "WebRTC is not available in this browser.<br>" +
+          "Open via <strong>https://</strong> or <strong>localhost</strong> (not file://).";
       } else {
         arToolkitSource.init(
           function onReady() {
@@ -97,9 +97,9 @@
           function onError(err) {
             var hint = document.getElementById("hint");
             hint.innerHTML =
-              "Камера недоступна: " +
-              (err.message || err.name || "невідома помилка") +
-              "<br>Відкрийте сторінку через <strong>https://</strong> або <strong>localhost</strong>.";
+              "Camera unavailable: " +
+              (err.message || err.name || "unknown error") +
+              "<br>Open this page via <strong>https://</strong> or <strong>localhost</strong>.";
           },
         );
       }
@@ -192,7 +192,7 @@
       var arWorldRoot = smoothedRoot;
       arWorldRoot.add(buildConjugationMesh());
 
-      // Освітлення
+      // Lighting
       scene.add(new THREE.AmbientLight(0xffffff, 0.45));
       var dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
       dirLight.position.set(1, 2, 1);
