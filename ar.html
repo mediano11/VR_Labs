@@ -4,376 +4,212 @@
     <meta charset="utf-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+      content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
     />
     <title>PA#3 – AR Conjugation Surface (MN marker)</title>
     <style>
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-
       body {
-        min-height: 100vh;
-        overflow-x: hidden;
-        overflow-y: auto;
-        background: #1e1e2e;
-        color: #cdd6f4;
+        margin: 0;
+        overflow: hidden;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 12px 12px 24px;
-        gap: 10px;
-      }
-
-      h2 {
-        font-size: 1.05rem;
-        color: #cba6f7;
-        text-align: center;
       }
 
       #hint {
-        font-size: 0.78rem;
-        color: #a6adc8;
+        position: absolute;
+        top: 10px;
+        width: 100%;
         text-align: center;
-        line-height: 1.45;
-        max-width: 420px;
+        z-index: 1;
+        color: #cdd6f4;
+        font-size: 0.8rem;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+        pointer-events: none;
       }
 
       #hint strong {
-        color: #f9e2af;
-      }
-
-      /* Компактне вікно камери (не на весь екран) */
-      #ar-viewport {
-        position: relative;
-        width: min(92vw, 420px);
-        aspect-ratio: 4 / 3;
-        max-height: 70vh;
-        border: 2px solid #45475a;
-        border-radius: 12px;
-        overflow: hidden;
-        background: #11111b;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-      }
-
-      /* A-Frame canvas всередині вікна */
-      #ar-viewport a-scene {
-        width: 100%;
-        height: 100%;
-        display: block;
-      }
-
-      #ar-viewport .a-canvas,
-      #ar-viewport canvas.a-canvas {
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        z-index: 2;
-      }
-
-      /* Відео з камери — contain, без «зуму» через crop */
-      #ar-viewport video {
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: contain !important;
-        object-position: center center !important;
-        z-index: 1;
-        transform: none !important;
-      }
-
-      #overlay {
-        position: absolute;
-        bottom: 8px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.6);
-        color: #cdd6f4;
-        font-size: 0.7rem;
-        padding: 5px 12px;
-        border-radius: 14px;
-        pointer-events: none;
-        white-space: nowrap;
-        z-index: 10;
-      }
-
-      #overlay span {
         color: #cba6f7;
-        font-weight: bold;
-      }
-
-      #marker-preview {
-        width: min(92vw, 200px);
-        border-radius: 8px;
-        border: 1px solid #45475a;
-      }
-
-      #marker-preview-caption {
-        font-size: 0.72rem;
-        color: #6c7086;
-        text-align: center;
       }
     </style>
 
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/three.js/build/ar.js"></script>
+    <script>
+      THREEx.ArToolkitContext.baseURL =
+        "https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/three.js/";
+    </script>
   </head>
 
   <body>
-    <h2>PA#3 – AR: поверхня кон’югації</h2>
-    <p id="hint">
-      На ПК відкрий маркер <strong>MN.png</strong> на екрані.<br />
-      На телефоні наведи камеру в це вікно ↓
-    </p>
-
-    <div id="ar-viewport">
-      <div id="overlay">Маркер <span>MN</span></div>
-
-      <a-scene
-        embedded
-        ar-viewport-fit
-        arjs="sourceType: webcam;
-              debugUIEnabled: false;
-              detectionMode: mono_and_matrix;
-              matrixCodeType: 3x3;
-              displayWidth: 640;
-              displayHeight: 480;"
-        renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true;"
-        vr-mode-ui="enabled: false"
-      >
-        <a-light type="ambient" color="#ffffff" intensity="0.45"></a-light>
-        <a-light
-          type="directional"
-          color="#ffffff"
-          intensity="0.9"
-          position="1 2 1"
-        ></a-light>
-        <a-light
-          type="directional"
-          color="#8899ff"
-          intensity="0.4"
-          position="-1 -1 -1"
-        ></a-light>
-
-        <a-marker type="pattern" url="./marker/pattern-MN.patt">
-          <a-entity conjugation-surface scale="0.07 0.07 0.07"></a-entity>
-        </a-marker>
-
-        <!-- fov ближче до типової задньої камери телефону — менше «надмірного зуму» -->
-        <a-entity camera fov="52"></a-entity>
-      </a-scene>
+    <div id="hint">
+      Наведіть камеру на маркер <strong>MN</strong> &nbsp;|&nbsp; поверхня кон’югації
     </div>
 
-    <p id="marker-preview-caption">Маркер для друку / екрана:</p>
-    <img id="marker-preview" src="./marker/MN.png" alt="MN marker" />
-
+    <script src="./Model.js"></script>
     <script>
-      function deg2rad(a) {
-        return (a * Math.PI) / 180;
-      }
+      // -----------------------------------------------------------------------
+      // Init renderer (як у прикладі AR.js three.js mobile performance)
+      // -----------------------------------------------------------------------
+      var renderer = new THREE.WebGLRenderer({ alpha: true });
+      renderer.setClearColor(new THREE.Color("lightgrey"), 0);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.domElement.style.position = "absolute";
+      renderer.domElement.style.top = "0px";
+      renderer.domElement.style.left = "0px";
+      document.body.appendChild(renderer.domElement);
 
-      /* Підганяє AR.js під розмір #ar-viewport і переносить video в нього */
-      AFRAME.registerComponent("ar-viewport-fit", {
-        init: function () {
-          const viewport = document.getElementById("ar-viewport");
-          const sceneEl = this.el;
+      var onRenderFcts = [];
+      var scene = new THREE.Scene();
+      var camera = new THREE.Camera();
+      scene.add(camera);
 
-          const baseArjs =
-            "sourceType: webcam; debugUIEnabled: false; " +
-            "detectionMode: mono_and_matrix; matrixCodeType: 3x3; ";
-
-          const placeVideo = function () {
-            const video = document.querySelector("video");
-            if (!video) return;
-
-            if (video.parentElement !== viewport) {
-              viewport.insertBefore(video, viewport.firstChild);
-            }
-
-            video.setAttribute("playsinline", "");
-            video.setAttribute("webkit-playsinline", "");
-            video.style.position = "absolute";
-            video.style.top = "0";
-            video.style.left = "0";
-            video.style.width = "100%";
-            video.style.height = "100%";
-            video.style.objectFit = "contain";
-            video.style.objectPosition = "center";
-            video.style.transform = "none";
-            video.style.zIndex = "1";
-          };
-
-          const fit = function () {
-            const w = Math.round(viewport.clientWidth);
-            const h = Math.round(viewport.clientHeight);
-            if (w < 10 || h < 10) return;
-
-            sceneEl.setAttribute(
-              "arjs",
-              baseArjs + "displayWidth: " + w + "; displayHeight: " + h + ";"
-            );
-
-            placeVideo();
-
-            const canvas = sceneEl.canvas || document.querySelector(".a-canvas");
-            if (canvas) {
-              canvas.style.position = "absolute";
-              canvas.style.top = "0";
-              canvas.style.left = "0";
-              canvas.style.width = "100%";
-              canvas.style.height = "100%";
-            }
-          };
-
-          sceneEl.addEventListener("loaded", function () {
-            fit();
-            setTimeout(fit, 300);
-            setTimeout(fit, 1000);
-            setTimeout(fit, 2500);
-          });
-
-          window.addEventListener("resize", fit);
-          window.addEventListener("orientationchange", function () {
-            setTimeout(fit, 200);
-          });
-
-          const observer = new MutationObserver(function () {
-            placeVideo();
-            fit();
-          });
-          observer.observe(document.body, { childList: true, subtree: true });
-        },
+      // -----------------------------------------------------------------------
+      // arToolkitSource
+      // -----------------------------------------------------------------------
+      var arToolkitSource = new THREEx.ArToolkitSource({
+        sourceType: "webcam",
       });
 
-      function buildConjugationGeometry(params) {
-        params = params || {};
+      arToolkitSource.init(function onReady() {
+        onResize();
+      });
 
-        const R1 = params.R1 !== undefined ? params.R1 : 0.5;
-        const R2 = params.R2 !== undefined ? params.R2 : 1.5;
-        const c = params.c !== undefined ? params.c : 6.0;
-        const phiDeg = params.phiDeg !== undefined ? params.phiDeg : 30;
-        const numU = Math.max(
-          2,
-          Math.floor(params.numU !== undefined ? params.numU : 48)
-        );
-        const numV = Math.max(
-          3,
-          Math.floor(params.numV !== undefined ? params.numV : 96)
-        );
+      window.addEventListener("resize", function () {
+        onResize();
+      });
 
-        const phi = deg2rad(phiDeg);
-
-        let a = R2 - R1;
-        if (Math.abs(a) < 1e-9) a = 1e-5;
-
-        let b;
-        if (phi < 0 && a < 0) b = c / 4;
-        else if (phi > 0 && a > 0) b = c / 4;
-        else if (phi < 0 && a > 0) b = (3 * c) / 4;
-        else b = (3 * c) / 4;
-
-        const r = function (z) {
-          return a * (1 - Math.cos((2 * Math.PI * z) / c)) + R1;
-        };
-
-        const positions = [];
-        const uvs = [];
-
-        for (let i = 0; i < numU; i++) {
-          const z = (b * i) / (numU - 1);
-          const radius = r(z);
-
-          for (let j = 0; j < numV; j++) {
-            const theta = (2 * Math.PI * j) / numV;
-            positions.push(
-              radius * Math.cos(theta),
-              radius * Math.sin(theta),
-              z
-            );
-            uvs.push(numU > 1 ? i / (numU - 1) : 0, j / numV);
-          }
+      function onResize() {
+        arToolkitSource.onResizeElement();
+        arToolkitSource.copyElementSizeTo(renderer.domElement);
+        if (arToolkitContext.arController !== null) {
+          arToolkitSource.copyElementSizeTo(
+            arToolkitContext.arController.canvas
+          );
         }
-
-        const indices = [];
-        for (let i = 0; i < numU - 1; i++) {
-          for (let j = 0; j < numV; j++) {
-            const jn = (j + 1) % numV;
-            const i0 = i * numV + j;
-            const i1 = i * numV + jn;
-            const i2 = (i + 1) * numV + j;
-            const i3 = (i + 1) * numV + jn;
-            indices.push(i0, i2, i1, i1, i2, i3);
-          }
-        }
-
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute(
-          "position",
-          new THREE.Float32BufferAttribute(positions, 3)
-        );
-        geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-        geo.setIndex(indices);
-        geo.computeVertexNormals();
-        return geo;
       }
 
-      AFRAME.registerComponent("conjugation-surface", {
-        schema: {
-          R1: { type: "number", default: 0.5 },
-          R2: { type: "number", default: 1.5 },
-          c: { type: "number", default: 6.0 },
-          phiDeg: { type: "number", default: 30 },
-          numU: { type: "int", default: 48 },
-          numV: { type: "int", default: 96 },
-          color: { type: "color", default: "#3a86ff" },
-          wireColor: { type: "color", default: "#a0c4ff" },
-          wireOpacity: { type: "number", default: 0.2 },
-        },
+      // -----------------------------------------------------------------------
+      // arToolkitContext
+      // -----------------------------------------------------------------------
+      var arToolkitContext = new THREEx.ArToolkitContext({
+        cameraParametersUrl:
+          THREEx.ArToolkitContext.baseURL + "../data/data/camera_para.dat",
+        detectionMode: "mono",
+        maxDetectionRate: 30,
+        canvasWidth: 80 * 3,
+        canvasHeight: 60 * 3,
+      });
 
-        init: function () {
-          const d = this.data;
-          const geo = buildConjugationGeometry({
-            R1: d.R1,
-            R2: d.R2,
-            c: d.c,
-            phiDeg: d.phiDeg,
-            numU: d.numU,
-            numV: d.numV,
-          });
+      arToolkitContext.init(function onCompleted() {
+        camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
+      });
 
-          const solidMat = new THREE.MeshPhongMaterial({
-            color: new THREE.Color(d.color),
-            specular: new THREE.Color(0x224488),
-            shininess: 60,
-            side: THREE.DoubleSide,
-          });
-          const solidMesh = new THREE.Mesh(geo, solidMat);
-          solidMesh.rotation.x = -Math.PI / 2;
+      onRenderFcts.push(function () {
+        if (arToolkitSource.ready === false) return;
+        arToolkitContext.update(arToolkitSource.domElement);
+      });
 
-          const wireMat = new THREE.MeshBasicMaterial({
-            color: new THREE.Color(d.wireColor),
-            wireframe: true,
-            opacity: d.wireOpacity,
-            transparent: true,
-          });
-          const wireMesh = new THREE.Mesh(geo, wireMat);
-          wireMesh.rotation.x = -Math.PI / 2;
+      // -----------------------------------------------------------------------
+      // Marker MN + smoothed controls
+      // -----------------------------------------------------------------------
+      var markerRoot = new THREE.Group();
+      scene.add(markerRoot);
 
-          this.el.setObject3D("mesh", solidMesh);
-          this.el.setObject3D("wireframe", wireMesh);
-        },
+      new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
+        type: "pattern",
+        patternUrl: "./marker/pattern-MN.patt",
+      });
 
-        remove: function () {
-          this.el.removeObject3D("mesh");
-          this.el.removeObject3D("wireframe");
-        },
+      var smoothedRoot = new THREE.Group();
+      scene.add(smoothedRoot);
+
+      var smoothedControls = new THREEx.ArSmoothedControls(smoothedRoot, {
+        lerpPosition: 0.4,
+        lerpQuaternion: 0.3,
+        lerpScale: 1,
+      });
+
+      onRenderFcts.push(function () {
+        smoothedControls.update(markerRoot);
+      });
+
+      // -----------------------------------------------------------------------
+      // Поверхня кон’югації (CreateSurfaceData з Model.js)
+      // -----------------------------------------------------------------------
+      function buildConjugationMesh() {
+        var data = {};
+        CreateSurfaceData(data, {
+          R1: 0.5,
+          R2: 1.5,
+          c: 6.0,
+          phiDeg: 30,
+          numU: 48,
+          numV: 96,
+        });
+
+        var geo = new THREE.BufferGeometry();
+        geo.addAttribute(
+          "position",
+          new THREE.BufferAttribute(data.verticesF32, 3)
+        );
+        geo.addAttribute(
+          "uv",
+          new THREE.BufferAttribute(data.texcoordsF32, 2)
+        );
+        geo.setIndex(new THREE.BufferAttribute(data.indicesU16, 1));
+        geo.computeVertexNormals();
+
+        var group = new THREE.Group();
+
+        var solidMat = new THREE.MeshPhongMaterial({
+          color: 0x3a86ff,
+          specular: 0x224488,
+          shininess: 60,
+          side: THREE.DoubleSide,
+        });
+        var solid = new THREE.Mesh(geo, solidMat);
+        solid.rotation.x = -Math.PI / 2;
+        solid.scale.set(0.25, 0.25, 0.25);
+        group.add(solid);
+
+        var wireMat = new THREE.MeshBasicMaterial({
+          color: 0xa0c4ff,
+          wireframe: true,
+          opacity: 0.2,
+          transparent: true,
+        });
+        var wire = new THREE.Mesh(geo, wireMat);
+        wire.rotation.x = -Math.PI / 2;
+        wire.scale.set(0.07, 0.07, 0.07);
+        group.add(wire);
+
+        return group;
+      }
+
+      var arWorldRoot = smoothedRoot;
+      arWorldRoot.add(buildConjugationMesh());
+
+      // Освітлення
+      scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+      var dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+      dirLight.position.set(1, 2, 1);
+      scene.add(dirLight);
+
+      // -----------------------------------------------------------------------
+      // Render loop
+      // -----------------------------------------------------------------------
+      onRenderFcts.push(function () {
+        renderer.render(scene, camera);
+      });
+
+      var lastTimeMsec = null;
+      requestAnimationFrame(function animate(nowMsec) {
+        requestAnimationFrame(animate);
+        lastTimeMsec = lastTimeMsec || nowMsec - 1000 / 60;
+        var deltaMsec = Math.min(200, nowMsec - lastTimeMsec);
+        lastTimeMsec = nowMsec;
+        onRenderFcts.forEach(function (onRenderFct) {
+          onRenderFct(deltaMsec / 1000, nowMsec / 1000);
+        });
       });
     </script>
   </body>
