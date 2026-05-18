@@ -31,11 +31,12 @@
       }
     </style>
 
+    <!-- three.js + AR.js (класична збірка з THREEx, як у mobile-performance.html) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/three.js/build/ar.js"></script>
+    <script src="https://jeromeetienne.github.io/AR.js/three.js/build/ar.js"></script>
     <script>
       THREEx.ArToolkitContext.baseURL =
-        "https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/three.js/";
+        "https://jeromeetienne.github.io/AR.js/three.js/";
     </script>
   </head>
 
@@ -69,26 +70,8 @@
         sourceType: "webcam",
       });
 
-      arToolkitSource.init(function onReady() {
-        onResize();
-      });
-
-      window.addEventListener("resize", function () {
-        onResize();
-      });
-
-      function onResize() {
-        arToolkitSource.onResizeElement();
-        arToolkitSource.copyElementSizeTo(renderer.domElement);
-        if (arToolkitContext.arController !== null) {
-          arToolkitSource.copyElementSizeTo(
-            arToolkitContext.arController.canvas
-          );
-        }
-      }
-
       // -----------------------------------------------------------------------
-      // arToolkitContext
+      // arToolkitContext (оголошуємо до onResize — callback камери асинхронний)
       // -----------------------------------------------------------------------
       var arToolkitContext = new THREEx.ArToolkitContext({
         cameraParametersUrl:
@@ -101,7 +84,50 @@
 
       arToolkitContext.init(function onCompleted() {
         camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
+        onResize();
       });
+
+      if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+      ) {
+        document.getElementById("hint").innerHTML =
+          "WebRTC недоступний у цьому браузері.<br>" +
+          "Відкрийте через <strong>https://</strong> або <strong>localhost</strong> (не file://).";
+      } else {
+      arToolkitSource.init(
+        function onReady() {
+          var video = arToolkitSource.domElement;
+          if (!video) return;
+          if (video.readyState >= 1) {
+            onResize();
+          } else {
+            video.addEventListener("loadedmetadata", onResize, { once: true });
+          }
+        },
+        function onError(err) {
+          var hint = document.getElementById("hint");
+          hint.innerHTML =
+            "Камера недоступна: " +
+            (err.message || err.name || "невідома помилка") +
+            "<br>Відкрийте сторінку через <strong>https://</strong> або <strong>localhost</strong>.";
+        }
+      );
+      }
+
+      window.addEventListener("resize", onResize);
+
+      function onResize() {
+        if (!arToolkitSource.domElement) return;
+
+        arToolkitSource.onResizeElement();
+        arToolkitSource.copyElementSizeTo(renderer.domElement);
+
+        var ctrl = arToolkitContext.arController;
+        if (ctrl && ctrl.canvas) {
+          arToolkitSource.copyElementSizeTo(ctrl.canvas);
+        }
+      }
 
       onRenderFcts.push(function () {
         if (arToolkitSource.ready === false) return;
@@ -179,7 +205,7 @@
         });
         var wire = new THREE.Mesh(geo, wireMat);
         wire.rotation.x = -Math.PI / 2;
-        wire.scale.set(0.07, 0.07, 0.07);
+        wire.scale.set(0.25, 0.25, 0.25);
         group.add(wire);
 
         return group;
