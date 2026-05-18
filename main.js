@@ -258,3 +258,92 @@ function init() {
 
     draw();
 }
+
+
+// let socket = new WebSocket("ws://192.168.0.102:8080/sensor/connect&type=android.sensor.magnetic_field");
+
+// socket.onopen  =function() {
+//     console.log("Connected");
+//     socket.send("Hello, server!");
+// }
+
+// socket.onmessage = function(event) 
+// {
+//     console.log("Received:", event.data);
+
+// }
+
+// function quatMultiply(q1, q2) {
+//     const [w1,x1,y1,z1] = q1;
+//     const [w2,x2,y2,z2] = q2;
+//     return [
+//       w1*w2 - x1*x2 - y1*y2 - z1*z2,
+//       w1*x2 + x1*w2 + y1*z2 - z1*y2,
+//       w1*y2 - x1*z2 + y1*w2 + z1*x2,
+//       w1*z2 + x1*y2 - y1*x2 + z1*w2
+//     ];
+//   }
+
+//   // angles3d- array of angles
+//   // magnRad- magnitude
+//   function quatFromEulerAngles(angles3d, magnRad) {
+//     const half = magnRad / 2;
+//     const sin = Math.sin(half);
+//     return [
+//       Math.cos(half),
+//       angles3d[0]*sin,
+//       angles3d[1]*sin,
+//       angles3d[2]*sin
+//     ];
+//   }
+
+//   function quatToEulerZXY(q) {
+//     const [w, x, y, z] = q;
+
+//     const beta  = Math.asin(clamp(2 * (w*x + y*z), -1, 1));
+//     const alpha = Math.atan2(-2 * (x*y - w*z), 1 - 2 * (x*x + z*z));
+//     const gamma = Math.atan2(-2 * (x*z - w*y), 1 - 2 * (x*x + y*y));
+
+//     return [
+//       radToDeg(alpha), // Z
+//       radToDeg(beta),  // X
+//       radToDeg(gamma)  // Y
+//     ];
+//   }
+
+//   function radToDeg(r) { return r * 180 / Math.PI; }
+//   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+//   let lastTimeStamp = null;
+//   let orientationQ = [1,0,0,0];
+
+//   .addEventListener(jsonData)
+//   {
+//     const t = jsonData.timeStamp;
+//     const alpha = jsonData.alpha;
+//     const beta  = jsonData.alpha;
+//     const gamma = jsonData.alpha;
+
+
+//     if (lastTimeStamp !== null) {
+
+//         const dt = (t - lastTimeStamp) / 1000;  // ms
+//         const wx = degToRad(alpha);
+//         const wy = degToRad(beta);
+//         const wz = degToRad(gamma);
+
+//         const omega = [wx, wy, wz];
+//         const mag = Math.hypot(..omega);
+
+//         if (mag > 0.0001)
+//         {
+//             const angles3d = omega.map(v => v / mag);
+//             const magnRad = mag*dt;
+//             const dq = quatFromEulerAngles(angles3d, magnRad);
+//             orientationQ = quatMultiply(orientationQ, dq);
+//         }
+
+//         lastTimeStamp = t;
+//     }
+
+//   }
