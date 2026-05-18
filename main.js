@@ -11,6 +11,122 @@ let iTextureWebCam = null;
 
 let video;
 
+// ── Sensor orientation ──────────────────────────────────────────────────────
+// Column-major 4×4 rotation matrix from phone game_rotation_vector.
+// null = sensor not connected, use trackball instead.
+let sensorRotMat = null;
+let sensorSocket = null;
+
+/**
+ * Port of Android SensorManager.getRotationMatrixFromVector (see SensorManager.java).
+ * rotVec: Float32 array [x, y, z] or [x, y, z, w]  (game_rotation_vector values).
+ * Returns a Float32Array(16) in COLUMN-MAJOR order ready for WebGL uniformMatrix4fv.
+ *
+ * Android stores the result row-major (R[row*4+col]).
+ * WebGL uniformMatrix4fv with transpose=false expects column-major (R[col*4+row]).
+ * transpose while filling the output array.
+ */
+function getRotationMatrixFromVector(rotVec) {
+    const q1 = rotVec[0]; // x·sin(θ/2)
+    const q2 = rotVec[1]; // y·sin(θ/2)
+    const q3 = rotVec[2]; // z·sin(θ/2)
+    let   q0;             // cos(θ/2)
+
+    if (rotVec.length >= 4) {
+        q0 = rotVec[3];
+    } else {
+        q0 = 1 - q1*q1 - q2*q2 - q3*q3;
+        q0 = (q0 > 0) ? Math.sqrt(q0) : 0;
+    }
+
+    const sq_q1 = 2 * q1 * q1;
+    const sq_q2 = 2 * q2 * q2;
+    const sq_q3 = 2 * q3 * q3;
+    const q1_q2 = 2 * q1 * q2;
+    const q3_q0 = 2 * q3 * q0;
+    const q1_q3 = 2 * q1 * q3;
+    const q2_q0 = 2 * q2 * q0;
+    const q2_q3 = 2 * q2 * q3;
+    const q1_q0 = 2 * q1 * q0;
+
+    // Android row-major:   R_a[r][c]
+    // WebGL column-major:  out[c*4+r] = R_a[r][c]
+    const out = new Float32Array(16);
+
+    // col 0
+    out[0]  = 1 - sq_q2 - sq_q3; // R[0][0]
+    out[1]  = q1_q2 + q3_q0;     // R[1][0]
+    out[2]  = q1_q3 - q2_q0;     // R[2][0]
+    out[3]  = 0;
+    // col 1
+    out[4]  = q1_q2 - q3_q0;     // R[0][1]
+    out[5]  = 1 - sq_q1 - sq_q3; // R[1][1]
+    out[6]  = q2_q3 + q1_q0;     // R[2][1]
+    out[7]  = 0;
+    // col 2
+    out[8]  = q1_q3 + q2_q0;     // R[0][2]
+    out[9]  = q2_q3 - q1_q0;     // R[1][2]
+    out[10] = 1 - sq_q1 - sq_q2; // R[2][2]
+    out[11] = 0;
+    // col 3 (translation = 0)
+    out[12] = 0; out[13] = 0; out[14] = 0; out[15] = 1;
+
+    return out;
+}
+
+// ── WebSocket sensor connection ─────────────────────────────────────────────
+
+function connectSensor() {
+    const ip = document.getElementById('sensorIp').value.trim();
+    if (!ip) return;
+
+    if (sensorSocket) {
+        sensorSocket.close();
+        sensorSocket = null;
+    }
+
+    setSensorStatus('connecting');
+
+    const url = 'ws://' + ip + ':8080/sensor/connect?type=android.sensor.game_rotation_vector';
+    sensorSocket = new WebSocket(url);
+
+    sensorSocket.onopen = function () {
+        setSensorStatus('connected');
+    };
+
+    sensorSocket.onmessage = function (event) {
+        try {
+            const data = JSON.parse(event.data);
+            sensorRotMat = getRotationMatrixFromVector(data.values);
+        } catch (e) { }
+    };
+
+    sensorSocket.onerror = function () {
+        setSensorStatus('error');
+    };
+
+    sensorSocket.onclose = function () {
+        setSensorStatus('disconnected');
+        sensorRotMat = null;
+        sensorSocket = null;
+    };
+}
+
+function disconnectSensor() {
+    if (sensorSocket) {
+        sensorSocket.close();
+    }
+    sensorRotMat = null;
+    setSensorStatus('disconnected');
+}
+
+function setSensorStatus(status) {
+    const labels = { connecting: 'Connecting…', connected: 'Connected', error: 'Error', disconnected: 'Disconnected' };
+    const colors  = { connecting: '#f9e2af',    connected: '#a6e3a1',   error: '#f38ba8', disconnected: '#6c7086' };
+    document.getElementById('sensorStatus').textContent      = labels[status];
+    document.getElementById('sensorDot').style.backgroundColor = colors[status];
+}
+
 
 // Constructor
 function ShaderProgram(name, program) {
@@ -72,7 +188,8 @@ function draw() {
 
     // ── STEREO ANAGLYPH PASSES ──────────────────────────────────────────────
 
-    let modelView          = spaceball.getViewMatrix();
+    // When sensor is connected use phone orientation; otherwise fall back to trackball.
+    let modelView          = sensorRotMat !== null ? sensorRotMat : spaceball.getViewMatrix();
     let rotateToPointZero  = m4.axisRotation([0.707, 0.707, 0], 0.7);
     let translateToPointZero = m4.translation(0, 0, -10);
 
