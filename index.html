@@ -89,12 +89,112 @@
         accent-color: #cba6f7;
         cursor: pointer;
       }
+
+      .sensor-row {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .sensor-row input[type="text"] {
+        flex: 1;
+        background: #1e1e2e;
+        border: 1px solid #45475a;
+        border-radius: 4px;
+        color: #cdd6f4;
+        padding: 4px 8px;
+        font-size: 0.8rem;
+        outline: none;
+      }
+
+      .sensor-row input[type="text"]:focus {
+        border-color: #89b4fa;
+      }
+
+      .btn {
+        background: #45475a;
+        color: #cdd6f4;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 10px;
+        font-size: 0.78rem;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .btn:hover {
+        background: #585b70;
+      }
+      .btn.danger {
+        background: #f38ba8;
+        color: #1e1e2e;
+      }
+      .btn.danger:hover {
+        background: #eba0ac;
+      }
+
+      .status-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.78rem;
+        color: #a6adc8;
+      }
+
+      #sensorDot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background-color: #6c7086;
+        flex-shrink: 0;
+        transition: background-color 0.3s;
+      }
+
+      #sensorData {
+        font-family: "Cascadia Code", "Consolas", monospace;
+        font-size: 0.7rem;
+        line-height: 1.45;
+        background: #1e1e2e;
+        border: 1px solid #45475a;
+        border-radius: 4px;
+        padding: 8px 10px;
+        color: #a6e3a1;
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 220px;
+        overflow-y: auto;
+      }
+
+      #sensorData.empty {
+        color: #6c7086;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .sensor-toggle-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.78rem;
+        color: #a6adc8;
+        cursor: pointer;
+        user-select: none;
+        justify-content: unset !important;
+      }
+
+      .sensor-toggle-label input {
+        accent-color: #cba6f7;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body onload="init()">
-    <h2>Anaglyph Stereo – Trackball Rotation</h2>
+    <h2>PA#2 – Anaglyph Stereo + Phone Orientation</h2>
     <p id="message">
-      Use red-cyan 3D glasses &nbsp;|&nbsp; Drag mouse to rotate
+      Use red-cyan 3D glasses &nbsp;|&nbsp; Drag mouse to rotate &nbsp;|&nbsp;
+      or connect phone sensor
     </p>
 
     <div id="layout">
@@ -175,6 +275,64 @@
               ).toFixed(1)
             "
           />
+        </div>
+
+        <h3>Phone Sensor (Sensor Server)</h3>
+
+        <div class="ctrl-group">
+          <label>Phone IP address</label>
+          <div class="sensor-row">
+            <input
+              type="text"
+              id="sensorIp"
+              placeholder="192.168.x.x"
+              value=""
+            />
+            <button class="btn" onclick="connectSensor()">Connect</button>
+          </div>
+          <div class="status-row" style="margin-top: 4px">
+            <div id="sensorDot"></div>
+            <span id="sensorStatus">Disconnected</span>
+            <button
+              class="btn danger"
+              onclick="disconnectSensor()"
+              style="margin-left: auto"
+            >
+              Disconnect
+            </button>
+          </div>
+        </div>
+
+        <div id="sensorDataPanel" class="hidden">
+          <div class="ctrl-group">
+            <label class="sensor-toggle-label">
+              <input
+                type="checkbox"
+                id="showSensorData"
+                onchange="onShowSensorDataChange()"
+              />
+              Show sensor data
+            </label>
+          </div>
+          <div id="sensorDataBlock" class="ctrl-group hidden">
+            <label>Sensor data</label>
+            <pre id="sensorData" class="empty"></pre>
+          </div>
+        </div>
+
+        <div
+          class="ctrl-group"
+          style="
+            font-size: 0.72rem;
+            color: #6c7086;
+            line-height: 1.5;
+            display: block;
+          "
+        >
+          Open <em>Sensor Server</em> on the phone, tap <strong>Start</strong>,
+          enter the displayed IP above and press Connect.<br />
+          The surface will follow the phone orientation.<br />
+          Disconnect to switch back to mouse control.
         </div>
       </div>
     </div>
